@@ -354,85 +354,81 @@ const updateVideo = async () => {
   }
 
   return (
-    <main
-      className="min-h-dvh bg-surface text-on-surface"
-      style={{
-        width: "1024px",
-        maxWidth: "none",
-        zoom: "min(1, calc(100vw / 1024px))",
-      }}
-    >
-      {notice ? (
-        <div className="fixed top-4 right-4 left-4 z-50 mx-auto max-w-md rounded-lg border border-brand/40 bg-surface-secondary px-4 py-3 text-center text-sm shadow-lg">
-          {notice}
-        </div>
-      ) : null}
+    <div className="min-h-screen bg-surface flex justify-center text-on-surface select-none">
+      <main className="w-full max-w-md min-h-screen bg-surface flex flex-col relative pb-6 shadow-2xl">
+        {notice ? (
+          <div className="fixed top-4 right-0 left-0 z-50 flex justify-center px-4">
+            <div className="max-w-xs rounded-xl border border-brand/40 bg-surface-secondary px-4 py-2.5 text-center text-xs text-on-surface shadow-xl">
+              {notice}
+            </div>
+          </div>
+        ) : null}
 
-      <header className="border-b border-border bg-surface-secondary">
-        <div className="mx-auto flex min-h-16 max-w-7xl items-center gap-3 px-4">
-          <a
-            href="/"
-            className="rounded-md p-2 text-muted hover:text-on-surface"
-            aria-label="Ana sayfa"
-          >
-            <ArrowLeft className="size-5" />
-          </a>
+        <header className="sticky top-0 z-40 border-b border-border bg-surface-secondary/95 backdrop-blur-md">
+          <div className="flex min-h-14 items-center gap-2.5 px-3">
+            <a
+              href="/"
+              className="rounded-lg p-2 text-muted hover:text-on-surface transition"
+              aria-label="Ana sayfa"
+            >
+              <ArrowLeft className="size-5" />
+            </a>
 
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-base font-bold">
-              {room.name}
-            </h1>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate font-display text-sm font-bold text-on-surface">
+                {room.name}
+              </h1>
+
+              <button
+                type="button"
+                onClick={() => void copyCode()}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-secondary active:opacity-75"
+              >
+                {room.code}
+                <Copy className="size-3" />
+              </button>
+            </div>
+
+            <div
+              className="flex items-center gap-1.5 text-[11px] text-muted mr-1"
+              title={
+                connected
+                  ? "Gerçek zamanlı bağlantı aktif"
+                  : "HTTP bağlantısı aktif; gerçek zamanlı bağlantı bekleniyor"
+              }
+            >
+              <span
+                className={`size-2 rounded-full ${
+                  connected ? "bg-success" : "bg-warning"
+                }`}
+              />
+              <span className="hidden xs:inline">{connected ? "Gerçek zamanlı" : "Bağlantı aktif"}</span>
+            </div>
 
             <button
               type="button"
-              onClick={() => void copyCode()}
-              className="inline-flex items-center gap-1 text-xs text-brand-secondary"
+              onClick={() => void leaveRoom()}
+              className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-border px-2.5 text-xs font-semibold text-muted hover:text-on-surface transition"
             >
-              {room.code}
-              <Copy className="size-3" />
+              <LogOut className="size-3.5" />
+              Çık
             </button>
           </div>
+        </header>
 
-          <div
-            className="hidden items-center gap-2 text-xs text-muted sm:flex"
-            title={
-              connected
-                ? "Gerçek zamanlı bağlantı aktif"
-                : "HTTP bağlantısı aktif; gerçek zamanlı bağlantı bekleniyor"
-            }
-          >
-            <span
-              className={`size-2 rounded-full ${
-                connected ? "bg-success" : "bg-warning"
-              }`}
+        <div className="flex flex-col gap-3.5 p-3.5 flex-1">
+          <section className="space-y-3.5">
+            <VideoPlayer
+              room={room}
+              participantId={participantId}
+              isHost={isHost}
+              serverOffset={serverOffset}
+              localVideo={localVideo}
             />
-            {connected ? "Gerçek zamanlı" : "Bağlantı aktif"}
-          </div>
 
-          <button
-            type="button"
-            onClick={() => void leaveRoom()}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-semibold text-muted"
-          >
-            <LogOut className="size-4" />
-            Çık
-          </button>
-        </div>
-      </header>
-
-      <div className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="min-w-0 space-y-4">
-          <VideoPlayer
-            room={room}
-            participantId={participantId}
-            isHost={isHost}
-            serverOffset={serverOffset}
-localVideo={localVideo}
-          />
-
-          {isHost ? (
-            <section className="rounded-xl border border-glass-border bg-surface-secondary p-4">
-              <div className="mb-3 flex items-center gap-2">
+            {isHost ? (
+              <section className="rounded-2xl border border-glass-border bg-surface-secondary p-3.5 shadow-md">
+                <div className="mb-2.5 flex items-center gap-2">
                 <Video className="size-4 text-brand" />
 
                 <h2 className="font-display text-sm font-bold">
@@ -670,6 +666,7 @@ localVideo={localVideo}
         </aside>
       </div>
     </main>
+  </div>
   );
 }
 

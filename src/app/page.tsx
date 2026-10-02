@@ -26,11 +26,6 @@ export default function Home() {
   const [toast, setToast] = useState<{ text: string; kind: "error" | "success" } | null>(null);
   const [webHintOpen, setWebHintOpen] = useState(false);
   const webHelpButtonRef = useRef<HTMLButtonElement | null>(null);
-  const [webHintPos, setWebHintPos] = useState<{
-    left: number;
-    top: number;
-    width: number;
-  } | null>(null);
 
   useEffect(() => {
     const n = getSavedNickname();
@@ -42,37 +37,6 @@ export default function Home() {
     const t = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(t);
   }, [toast]);
-
-  useEffect(() => {
-    if (!webHintOpen) return;
-    const t = setTimeout(() => setWebHintOpen(false), 5000);
-    return () => clearTimeout(t);
-  }, [webHintOpen]);
-
-
-  const openWebHint = () => {
-    setWebHintOpen(true);
-
-    requestAnimationFrame(() => {
-      const button = webHelpButtonRef.current;
-      if (!button) return;
-
-      const rect = button.getBoundingClientRect();
-      const margin = 12;
-      const width = Math.min(208, window.innerWidth - margin * 2);
-
-      const left = Math.min(
-        Math.max(margin, rect.right - width),
-        window.innerWidth - width - margin,
-      );
-
-      setWebHintPos({
-        left,
-        top: Math.max(56, rect.top - 8),
-        width,
-      });
-    });
-  };
 
   const canSubmit = nickname.trim().length > 0 && (mode === "create" || code.trim().length === 6);
 
@@ -96,191 +60,169 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-dvh bg-surface" data-testid="home-screen">
-      {toast ? (
-        <div className="pointer-events-none fixed top-4 right-0 left-0 z-50 flex justify-center px-4">
-          <div
-            className={`max-w-md rounded-md border bg-surface-tertiary px-4 py-3 text-center text-sm text-on-surface ${toast.kind === "error" ? "border-error" : "border-success"}`}
-          >
-            {toast.text}
-          </div>
-        </div>
-      ) : null}
-
-      <section className="relative h-[380px]">
-        <img src={HERO} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-linear-to-b from-transparent via-overlay to-surface" />
-        <div className="relative flex h-full flex-col justify-end gap-2.5 px-6 pt-16 pb-4">
-          <div className="inline-flex w-fit items-center gap-1.5 rounded-pill border border-glass-border bg-glass px-2.5 py-1">
-            <Zap className="size-3 text-brand" />
-            <span className="font-text text-[11px] tracking-[1.5px] text-brand">SENKRON İZLEME</span>
-          </div>
-          <div className="flex items-center">
-            <img
-              src="/branding/nexora-logo.jpg"
-              alt="Nexora Watch"
-              className="h-14 w-auto max-w-[260px] rounded-md object-contain"
-            />
-          </div>
-          <h1 className="mt-1 max-w-[340px] font-display text-2xl font-bold leading-tight tracking-tight text-on-surface">
-            Better Than Rave.
-          </h1>
-          <p className="font-text text-xs tracking-[1.6px] text-brand-secondary uppercase">
-            by LenstedReal
-          </p>
-          <p className="font-text max-w-80 text-[15px] leading-5.5 text-on-surface-tertiary">
-            Sevdiklerinle aynı anda, aynı karede. YouTube, Drive ve daha fazlası.
-          </p>
-          <div className="mt-1 flex flex-wrap gap-2">
-        {SOURCES.map((s) =>
-          s.label === "Web" ? (
-            <span
-              key={s.label}
-              className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface-tertiary px-2.5 py-1.5"
+    <div className="min-h-screen bg-surface flex justify-center text-on-surface select-none">
+      <main className="w-full max-w-md min-h-screen bg-surface flex flex-col relative pb-8 shadow-2xl" data-testid="home-screen">
+        {toast ? (
+          <div className="pointer-events-none fixed top-4 right-0 left-0 z-50 flex justify-center px-4">
+            <div
+              className={`max-w-xs rounded-xl border bg-surface-tertiary px-4 py-3 text-center text-xs text-on-surface shadow-lg ${toast.kind === "error" ? "border-error" : "border-success"}`}
             >
-              <s.icon className="size-3.5 text-brand-secondary" />
+              {toast.text}
+            </div>
+          </div>
+        ) : null}
 
-              <span className="font-text text-xs text-on-surface-tertiary">
-                Web
-                <span className="ml-1 text-[9px] font-semibold text-brand-secondary">
-                  (BETA)
-                </span>
-              </span>
+        {/* Mobile App Header & Hero */}
+        <section className="relative h-[320px] w-full shrink-0">
+          <img src={HERO} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-surface/40 via-surface/80 to-surface" />
+          
+          <div className="relative flex h-full flex-col justify-end gap-2 px-5 pb-3">
+            <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-glass-border bg-glass px-2.5 py-1">
+              <Zap className="size-3 text-brand" />
+              <span className="font-text text-[10px] font-bold tracking-[1.5px] text-brand">SENKRON İZLEME</span>
+            </div>
 
-              <span className="relative">
-                <button
-                  ref={webHelpButtonRef}
-                  type="button"
-                  onClick={openWebHint}
-                  className="grid size-5 place-items-center rounded-full text-muted transition hover:text-on-surface"
-                  aria-label="Web özelliği hakkında bilgi"
-                  aria-expanded={webHintOpen}
+            <div className="flex items-center">
+              <img
+                src="/branding/nexora-logo.jpg"
+                alt="Nexora Watch"
+                className="h-12 w-auto max-w-[220px] rounded-lg object-contain shadow-md"
+              />
+            </div>
+
+            <h1 className="font-display text-xl font-bold leading-tight tracking-tight text-on-surface">
+              Better Than Rave.
+            </h1>
+            <p className="font-text text-[11px] font-semibold tracking-[1.6px] text-brand-secondary uppercase">
+              by LenstedReal
+            </p>
+            <p className="font-text text-[13px] leading-snug text-on-surface-tertiary">
+              Sevdiklerinle aynı anda, aynı karede. YouTube, Drive ve daha fazlası.
+            </p>
+
+            {/* Source chips */}
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {SOURCES.map((s) => (
+                <span
+                  key={s.label}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-tertiary/90 px-2.5 py-1"
                 >
-                  <CircleHelp className="size-3.5" />
-                </button>
-
-                {webHintOpen && webHintPos ? (
-                  <span
-                    role="status"
-                    className="pointer-events-none fixed z-[100] -translate-y-full rounded-md border border-border bg-surface-secondary px-3 py-2 text-center font-text text-[10px] leading-4 text-on-surface shadow-2xl"
-                    style={{
-                      left: webHintPos.left,
-                      top: webHintPos.top,
-                      width: webHintPos.width,
-                    }}
-                  >
-                    Şu anda bu özellik test aşamasındadır.
+                  <s.icon className="size-3 text-brand-secondary" />
+                  <span className="font-text text-[11px] text-on-surface-tertiary">
+                    {s.label}
+                    {s.label === "Web" && (
+                      <span className="ml-1 text-[8px] font-bold text-brand-secondary">
+                        (BETA)
+                      </span>
+                    )}
                   </span>
-                ) : null}
-              </span>
-            </span>
-          ) : (
-            <span
-              key={s.label}
-              className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface-tertiary px-2.5 py-1.5"
-            >
-              <s.icon className="size-3.5 text-brand-secondary" />
-              <span className="font-text text-xs text-on-surface-tertiary">
-                {s.label}
-              </span>
-            </span>
-          ),
-        )}
-      </div>
+                  {s.label === "Web" && (
+                    <button
+                      ref={webHelpButtonRef}
+                      type="button"
+                      onClick={() => setWebHintOpen(!webHintOpen)}
+                      className="ml-0.5 text-muted hover:text-on-surface"
+                      aria-label="Web bilgisi"
+                    >
+                      <CircleHelp className="size-3" />
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
 
-        </div>
-      </section>
-
-      <section className="mx-4 mt-2 mb-8 rounded-lg border border-glass-border bg-surface-secondary p-5">
-        <div className="mb-4 flex rounded-md bg-surface-tertiary p-1">
-          {(["create", "join"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              data-testid={m === "create" ? "mode-create-tab" : "mode-join-tab"}
-              onClick={() => setMode(m)}
-              className={`min-h-11 flex-1 rounded-sm font-display text-sm font-semibold ${
-                mode === m
-                  ? "border border-brand-secondary bg-brand-tertiary text-on-surface"
-                  : "text-muted"
-              }`}
-            >
-              {m === "create" ? "Oda Kur" : "Odaya Katıl"}
-            </button>
-          ))}
-        </div>
-
-        <Field
-          testId="nickname-input"
-          label="Rumuz"
-          icon={<User className="size-4" />}
-          placeholder="Nasıl görünmek istersin?"
-          value={nickname}
-          maxLength={24}
-          onChange={setNickname}
-        />
-        {mode === "create" ? (
-          <Field
-            testId="room-name-input"
-            label="Oda adı"
-            icon={<Film className="size-4" />}
-            placeholder="Cuma gecesi filmi"
-            value={roomName}
-            maxLength={48}
-            onChange={setRoomName}
-          />
-        ) : (
-          <Field
-            testId="room-code-input"
-            label="Oda kodu"
-            icon={<Key className="size-4" />}
-            placeholder="6 haneli kod"
-            value={code}
-            maxLength={6}
-            onChange={(v) => setCode(v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
-            className="tracking-[6px] text-xl font-bold"
-          />
-        )}
-
-        <button
-          type="button"
-          data-testid="home-submit-button"
-          disabled={!canSubmit || loading}
-          onClick={submit}
-          className="relative mt-2 flex min-h-[52px] w-full items-center justify-center gap-2 overflow-hidden rounded-md px-5 font-display text-base font-bold tracking-wide text-on-brand disabled:opacity-50"
-        >
-          <span className="absolute inset-0 bg-linear-to-br from-brand to-brand-secondary" />
-          <span className="relative flex items-center gap-2">
-            {loading ? (
-              "…"
-            ) : (
-              <>
-                <Sparkles className="size-4" />
-                {mode === "create" ? "Odayı Kur" : "Katıl"}
-              </>
+            {webHintOpen && (
+              <div className="mt-1 rounded-lg border border-border bg-surface-secondary px-3 py-2 text-center font-text text-[11px] text-on-surface shadow-md">
+                Şu anda bu özellik test aşamasındadır.
+              </div>
             )}
-          </span>
-        </button>
-        <p className="mt-4 text-center font-text text-xs leading-4.5 text-muted">
-          Odalar 24 saat sonra otomatik kapanır. Videoyu yalnızca oda sahibi kontrol eder.
-        </p>
-      </section>
-      <a
-        href="https://link.me/lenstedreal"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="LenstedReal portfolio"
-        className="absolute top-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-glass-border bg-surface-secondary/80 px-3 py-2 backdrop-blur-md transition-all hover:border-brand-secondary hover:bg-surface-tertiary"
-      >
-        <span className="size-1.5 rounded-full bg-brand shadow-[0_0_8px_currentColor] text-brand" />
-        <span className="font-text text-xs font-semibold text-on-surface">
-          LenstedReal
-        </span>
-        <span className="font-text text-[10px] text-muted">
-          Portfolio ↗
-        </span>
-      </a>
-    </main>
+          </div>
+        </section>
+
+        {/* Mobile Action Card */}
+        <section className="mx-4 mt-2 rounded-2xl border border-glass-border bg-surface-secondary p-5 shadow-xl flex-1 flex flex-col justify-between">
+          <div>
+            {/* Mode Switcher */}
+            <div className="mb-4 flex rounded-xl bg-surface-tertiary p-1">
+              {(["create", "join"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  data-testid={m === "create" ? "mode-create-tab" : "mode-join-tab"}
+                  onClick={() => setMode(m)}
+                  className={`min-h-11 flex-1 rounded-lg font-display text-sm font-semibold transition ${
+                    mode === m
+                      ? "border border-brand-secondary bg-brand-tertiary text-on-surface shadow-sm"
+                      : "text-muted hover:text-on-surface"
+                  }`}
+                >
+                  {m === "create" ? "Oda Kur" : "Odaya Katıl"}
+                </button>
+              ))}
+            </div>
+
+            <Field
+              testId="nickname-input"
+              label="Rumuz"
+              icon={<User className="size-4" />}
+              placeholder="Nasıl görünmek istersin?"
+              value={nickname}
+              maxLength={24}
+              onChange={setNickname}
+            />
+
+            {mode === "create" ? (
+              <Field
+                testId="room-name-input"
+                label="Oda adı"
+                icon={<Film className="size-4" />}
+                placeholder="Cuma gecesi filmi"
+                value={roomName}
+                maxLength={48}
+                onChange={setRoomName}
+              />
+            ) : (
+              <Field
+                testId="room-code-input"
+                label="Oda kodu"
+                icon={<Key className="size-4" />}
+                placeholder="6 haneli kod"
+                value={code}
+                maxLength={6}
+                onChange={(v) => setCode(v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+                className="tracking-[6px] text-xl font-bold"
+              />
+            )}
+          </div>
+
+          <div>
+            <button
+              type="button"
+              data-testid="home-submit-button"
+              disabled={!canSubmit || loading}
+              onClick={submit}
+              className="relative mt-3 flex min-h-[52px] w-full items-center justify-center gap-2 overflow-hidden rounded-xl px-5 font-display text-base font-bold tracking-wide text-on-brand disabled:opacity-50 transition active:scale-[0.98]"
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-brand to-brand-secondary" />
+              <span className="relative flex items-center gap-2">
+                {loading ? (
+                  "…"
+                ) : (
+                  <>
+                    <Sparkles className="size-4" />
+                    {mode === "create" ? "Odayı Kur" : "Katıl"}
+                  </>
+                )}
+              </span>
+            </button>
+            <p className="mt-4 text-center font-text text-[11px] leading-4 text-muted">
+              Odalar 24 saat sonra otomatik kapanır. Videoyu yalnızca oda sahibi kontrol eder.
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }
 
@@ -304,9 +246,9 @@ function Field({
   className?: string;
 }) {
   return (
-    <label className="mb-4 block">
-      <span className="mb-2 block font-text text-xs tracking-widest text-muted uppercase">{label}</span>
-      <span className="flex min-h-[52px] items-center gap-2.5 rounded-md border border-border bg-surface-tertiary px-3.5 focus-within:border-brand">
+    <label className="mb-3 block">
+      <span className="mb-1.5 block font-text text-[11px] font-semibold tracking-wider text-muted uppercase">{label}</span>
+      <span className="flex min-h-[48px] items-center gap-2.5 rounded-xl border border-border bg-surface-tertiary px-3.5 focus-within:border-brand transition">
         <span className="text-muted">{icon}</span>
         <input
           data-testid={testId}
@@ -314,7 +256,7 @@ function Field({
           maxLength={maxLength}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className={`min-w-0 flex-1 bg-transparent py-3 font-text text-base text-on-surface outline-none placeholder:text-muted ${className}`}
+          className={`min-w-0 flex-1 bg-transparent py-2.5 font-text text-sm text-on-surface outline-none placeholder:text-muted ${className}`}
         />
       </span>
     </label>
