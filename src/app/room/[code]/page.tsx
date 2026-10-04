@@ -6,12 +6,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Copy,
-
+  Lock,
   LogOut,
   MessageCircle,
   Send,
   Upload,
   Users,
+  Vibrate,
   Video,
   X,
 } from "lucide-react";
@@ -44,10 +45,15 @@ export default function RoomPage() {
 
   // Web görünümü oda seviyesinde tutulur.
   // Böylece host/guest player state'i birbirinden kopmaz.
-const [localUploading, setLocalUploading] = useState(false);
+  const [localUploading, setLocalUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState("");
+  const [hapticEnabled, setHapticEnabled] = useState(true);
+  const [overlayReactions, setOverlayReactions] = useState<
+    Array<{ id: string; emoji: string; leftPct: number }>
+  >([]);
+  const lastReactionAtRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -69,6 +75,7 @@ const [localUploading, setLocalUploading] = useState(false);
     roomLoading,
     messages,
     connected,
+    connectionStatus,
     serverOffset,
     sendRealtime,
   } = useRoom({
@@ -93,6 +100,32 @@ const [localUploading, setLocalUploading] = useState(false);
   const flash = (text: string) => {
     setNotice(text);
     window.setTimeout(() => setNotice(""), 2500);
+  };
+
+  const triggerOverlayReaction = (emoji: string) => {
+    const now = Date.now();
+    if (now - lastReactionAtRef.current < 800) return;
+    lastReactionAtRef.current = now;
+
+    if (hapticEnabled && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate(15);
+      } catch {
+        // ignore
+      }
+    }
+
+    const id = `${now}-${Math.random().toString(36).slice(2, 7)}`;
+    const leftPct = Math.floor(15 + Math.random() * 70);
+    setOverlayReactions((prev) => [...prev.slice(-10), { id, emoji, leftPct }]);
+    window.setTimeout(() => {
+      setOverlayReactions((prev) => prev.filter((item) => item.id !== id));
+    }, 1600);
+
+    if (participantId) {
+      sendRealtime({ type: "reaction", emoji, nickname });
+      void api.sendMessage(code, participantId, emoji).catch(() => {});
+    }
   };
 
   const sendMessage = async () => {
@@ -390,19 +423,32 @@ const updateVideo = async () => {
             </div>
 
             <div
+              data-testid="connection-status-indicator"
               className="flex items-center gap-1.5 text-[11px] text-muted mr-1"
               title={
-                connected
-                  ? "Gerçek zamanlı bağlantı aktif"
-                  : "HTTP bağlantısı aktif; gerçek zamanlı bağlantı bekleniyor"
+                connectionStatus === "connected"
+                  ? "Bağlı"
+                  : connectionStatus === "reconnecting"
+                    ? "Yeniden bağlanıyor"
+                    : "Bağlantı yok"
               }
             >
               <span
                 className={`size-2 rounded-full ${
-                  connected ? "bg-success" : "bg-warning"
+                  connectionStatus === "connected"
+                    ? "bg-success"
+                    : connectionStatus === "reconnecting"
+                      ? "bg-warning"
+                      : "bg-error"
                 }`}
               />
-              <span className="hidden xs:inline">{connected ? "Gerçek zamanlı" : "Bağlantı aktif"}</span>
+              <span>
+                {connectionStatus === "connected"
+                  ? "Bağlı"
+                  : connectionStatus === "reconnecting"
+                    ? "Yeniden bağlanıyor"
+                    : "Bağlantı yok"}
+              </span>
             </div>
 
             <button
@@ -418,13 +464,79 @@ const updateVideo = async () => {
 
         <div className="flex flex-col gap-3.5 p-3.5 flex-1">
           <section className="space-y-3.5">
-            <VideoPlayer
-              room={room}
-              participantId={participantId}
-              isHost={isHost}
-              serverOffset={serverOffset}
-              localVideo={localVideo}
-            />
+            <div className="relative overflow-hidden rounded-xl border border-glass-border bg-black">
+              <div className="relative">
+                <VideoPlayer
+                  room={room}
+                  participantId={participantId}
+                  isHost={isHost}
+                  serverOffset={serverOffset}
+                  localVideo={localVideo}
+                />
+
+                {!isHost && (
+                  <div
+                    data-testid="player-readonly-badge"
+                    className="pointer-events-none absolute top-2.5 left-2.5 z-30 inline-flex items-center gap-1.5 rounded-full border border-warning/50 bg-black/75 px-2.5 py-1 text-[10px] font-bold tracking-wider text-warning backdrop-blur-md"
+                  >
+                    <Lock className="size-3" />
+                    <span>SALT OKUNUR</span>
+                  </div>
+                )}
+
+                {overlayReactions.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{ left: `${item.leftPct}%` }}
+                    className="pointer-events-none absolute bottom-4 z-30 animate-bounce text-2xl drop-shadow-lg"
+                  >
+                    {item.emoji}
+                  </div>
+                ))}
+              </div>
+
+              {!isHost && (
+                <div
+                  data-testid="guest-readonly-controls-bar"
+                  className="flex items-center gap-2 border-t border-border bg-surface-tertiary/90 px-3 py-2 text-[11px] text-muted"
+                >
+                  <Lock className="size-3.5 shrink-0 text-brand-secondary" />
+                  <span>İzleyici modundasınız • Oynatma kontrolü oda sahibinde</span>
+                </div>
+              )}
+
+              <div
+                data-testid="video-reaction-bar"
+                className="flex items-center justify-between border-t border-border bg-surface-secondary px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  {(["🔥", "❤️", "😂", "👏"] as const).map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => triggerOverlayReaction(emoji)}
+                      className="grid size-9 place-items-center rounded-lg border border-border bg-surface-tertiary text-base transition hover:border-brand active:scale-95"
+                      aria-label={`${emoji} tepkisi gönder`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setHapticEnabled((prev) => !prev)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${
+                    hapticEnabled
+                      ? "border-brand/50 bg-brand/15 text-on-surface"
+                      : "border-border bg-surface-tertiary text-muted"
+                  }`}
+                >
+                  <Vibrate className="size-3.5" />
+                  <span>Haptik</span>
+                </button>
+              </div>
+            </div>
 
             {isHost ? (
               <section className="rounded-2xl border border-glass-border bg-surface-secondary p-3.5 shadow-md">
@@ -534,8 +646,15 @@ const updateVideo = async () => {
               </div>
             </section>
           ) : (
-            <div className="rounded-xl border border-border bg-surface-secondary px-4 py-3 text-xs text-muted">
-              Videoyu yalnızca oda sahibi değiştirebilir.
+            <div
+              data-testid="guest-readonly-indicator"
+              className="flex items-center gap-2.5 rounded-xl border border-border bg-surface-secondary px-4 py-3 text-xs text-muted"
+            >
+              <Lock className="size-4 shrink-0 text-warning" />
+              <span className="flex-1">
+                Salt okunur mod: Videoyu ve oynatmayı yalnızca oda sahibi değiştirebilir.
+              </span>
+              <span className="text-[10px] font-bold text-warning">SALT OKUNUR</span>
             </div>
           )}
 

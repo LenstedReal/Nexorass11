@@ -4,13 +4,29 @@ import { ApiError, api, messageKey, type Message, type Playback, type Room, wsUr
 
 type Options = { code: string; participantId: string | null };
 
+export type ConnectionStatus = "connected" | "reconnecting" | "disconnected";
+
 export function useRoom({ code, participantId }: Options) {
   const queryClient = useQueryClient();
   const [connected, setConnected] = useState(false);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true,
+  );
   const [serverOffset, setServerOffset] = useState(0);
   const offsetRef = useRef(0);
   const socketRef = useRef<WebSocket | null>(null);
   const enabled = !!participantId;
+
+  useEffect(() => {
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   const roomQuery = useQuery({
     queryKey: ["room", code],
@@ -157,12 +173,21 @@ export function useRoom({ code, participantId }: Options) {
     };
   }, [code, participantId, queryClient, applyOffset]);
 
+  const connectionStatus: ConnectionStatus = !isOnline
+    ? "disconnected"
+    : connected || (roomQuery.isSuccess && !roomQuery.isError)
+      ? "connected"
+      : roomQuery.isError
+        ? "disconnected"
+        : "reconnecting";
+
   return {
     room: roomQuery.data ?? null,
     roomError: roomQuery.error as ApiError | null,
     roomLoading: roomQuery.isLoading,
     messages: messagesQuery.data ?? [],
     connected,
+    connectionStatus,
     serverOffset,
     transport: connected ? "realtime" : "polling",
     sendRealtime,

@@ -37,8 +37,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lenstedreal.nexorawatch.R
 import com.lenstedreal.nexorawatch.data.Room
+import com.lenstedreal.nexorawatch.realtime.ConnectionStatus
 import com.lenstedreal.nexorawatch.ui.theme.NexoraBorder
 import com.lenstedreal.nexorawatch.ui.theme.NexoraBrandSecondary
+import com.lenstedreal.nexorawatch.ui.theme.NexoraError
 import com.lenstedreal.nexorawatch.ui.theme.NexoraMuted
 import com.lenstedreal.nexorawatch.ui.theme.NexoraOnSurface
 import com.lenstedreal.nexorawatch.ui.theme.NexoraSuccess
@@ -48,13 +50,25 @@ import com.lenstedreal.nexorawatch.ui.theme.NexoraWarning
 @Composable
 fun RoomHeader(
     room: Room,
-    isConnected: Boolean,
+    connectionStatus: ConnectionStatus,
     onBackClick: () -> Unit,
     onLeaveClick: () -> Unit,
     onNotice: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    val statusColor = when (connectionStatus) {
+        ConnectionStatus.CONNECTED -> NexoraSuccess
+        ConnectionStatus.RECONNECTING -> NexoraWarning
+        ConnectionStatus.DISCONNECTED -> NexoraError
+    }
+
+    val statusText = when (connectionStatus) {
+        ConnectionStatus.CONNECTED -> stringResource(R.string.realtime_status_connected) // "Bağlı"
+        ConnectionStatus.RECONNECTING -> stringResource(R.string.realtime_status_connecting) // "Yeniden bağlanıyor"
+        ConnectionStatus.DISCONNECTED -> stringResource(R.string.realtime_status_disconnected) // "Bağlantı yok"
+    }
 
     Row(
         modifier = modifier
@@ -120,22 +134,24 @@ fun RoomHeader(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // Realtime status indicator
+        // Phase 6H: Visible room connection indicator ("Bağlı" / "Yeniden bağlanıyor" / "Bağlantı yok")
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(end = 8.dp)
+            modifier = Modifier
+                .padding(end = 8.dp)
+                .testTag("connection_status_indicator")
         ) {
             Box(
                 modifier = Modifier
                     .size(8.dp)
                     .background(
-                        color = if (isConnected) NexoraSuccess else NexoraWarning,
+                        color = statusColor,
                         shape = CircleShape
                     )
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = if (isConnected) stringResource(R.string.realtime_status_connected) else stringResource(R.string.realtime_status_connecting),
+                text = statusText,
                 fontSize = 11.sp,
                 color = NexoraMuted
             )

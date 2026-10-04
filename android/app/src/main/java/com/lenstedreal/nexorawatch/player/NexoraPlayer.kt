@@ -8,8 +8,6 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.hls.HlsMediaSource
-import androidx.media3.datasource.DefaultHttpDataSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,23 +41,44 @@ class NexoraPlayer(
 
     private var currentLoadedUrl: String? = null
 
-    var onUserSeek: ((Double) -> Unit)? = null
-    var onUserPlayPause: ((Boolean) -> Unit)? = null
+    var onUserSeek: ((Boolean, Double) -> Unit)? = null
+    var onUserPlayPause: ((Boolean, Double) -> Unit)? = null
 
     init {
         exoPlayer.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updateState()
+                onUserPlayPause?.invoke(isPlaying, currentPositionSeconds)
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) {
+                    _state.value = _state.value.copy(
+                        hasError = false,
+                        errorMessage = null
+                    )
+                }
                 updateState()
             }
 
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int
+            ) {
+                updateState()
+                if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                    onUserSeek?.invoke(exoPlayer.isPlaying, newPosition.positionMs.coerceAtLeast(0L) / 1000.0)
+                }
+            }
+
             override fun onPlayerError(error: PlaybackException) {
+                val detail = error.localizedMessage ?: "Video kaynağı yüklenemedi veya desteklenmiyor."
                 _state.value = _state.value.copy(
+                    isBuffering = false,
+                    isPlaying = false,
                     hasError = true,
-                    errorMessage = error.localizedMessage ?: "Oynatma hatası"
+                    errorMessage = "Oynatma hatası: $detail"
                 )
             }
         })
@@ -78,20 +97,26 @@ class NexoraPlayer(
     }
 
     private fun updateState() {
+        val current = _state.value
         val pos = (exoPlayer.currentPosition.coerceAtLeast(0L) / 1000.0)
         val dur = (exoPlayer.duration.coerceAtLeast(0L) / 1000.0)
-        _state.value = _state.value.copy(
+        // Preserve persistent error state until resolved or retried
+        _state.value = current.copy(
             isPlaying = exoPlayer.isPlaying,
             positionSeconds = pos,
             durationSeconds = dur,
-            isBuffering = exoPlayer.playbackState == Player.STATE_BUFFERING,
-            hasError = false
+            isBuffering = !current.hasError && exoPlayer.playbackState == Player.STATE_BUFFERING
         )
     }
 
     fun resolveAbsoluteUrl(rawUrl: String): String {
         val trimmed = rawUrl.trim()
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("content://") || trimmed.startsWith("file://")) {
+        if (
+            trimmed.startsWith("http://") ||
+            trimmed.startsWith("https://") ||
+            trimmed.startsWith("content://") ||
+            trimmed.startsWith("file://")
+        ) {
             return trimmed
         }
         val cleanBase = baseUrl.trimEnd('/')
@@ -99,10 +124,29 @@ class NexoraPlayer(
         return "$cleanBase$cleanPath"
     }
 
-    fun setSource(rawUrl: String) {
+    fun setSource(rawUrl: String, forceReload: Boolean = false) {
         val absoluteUrl = resolveAbsoluteUrl(rawUrl)
-        if (currentLoadedUrl == absoluteUrl) return
+        if (!forceReload && currentLoadedUrl == absoluteUrl && !_state.value.hasError) return
         currentLoadedUrl = absoluteUrl
+
+        _state.value = _state.value.copy(
+            hasError = false,
+            errorMessage = null,
+            isBuffering = true
+        )
+
+        if (! (absoluteUrl.startsWith("http://") ||
+                    absoluteUrl.startsWith("https://") ||
+                    absoluteUrl.startsWith("content://") ||
+                    absoluteUrl.startsWith("file://"))
+        ) {
+            _state.value = _state.value.copy(
+                isBuffering = false,
+                hasError = true,
+                errorMessage = "Geçersiz video bağlantısı."
+            )
+            return
+        }
 
         val isHls = absoluteUrl.contains(".m3u8", ignoreCase = true)
 
@@ -114,6 +158,18 @@ class NexoraPlayer(
         val mediaItem = mediaItemBuilder.build()
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
+    }
+
+    fun retry() {
+        val url = currentLoadedUrl ?: return
+        setSource(url, forceReload = true)
+    }
+
+    fun clearSource() {
+        currentLoadedUrl = null
+        exoPlayer.stop()
+        exoPlayer.clearMediaItems()
+        _state.value = NexoraPlayerState()
     }
 
     fun play() {

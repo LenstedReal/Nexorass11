@@ -20,17 +20,21 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.lenstedreal.nexorawatch.R
 import com.lenstedreal.nexorawatch.ui.theme.NexoraBorder
 import com.lenstedreal.nexorawatch.ui.theme.NexoraBrand
@@ -48,6 +52,20 @@ fun RoomScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Background -> Foreground recovery (Global Test Matrix: TEST — BACKGROUND)
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onAppForeground()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     BackHandler {
         viewModel.leaveRoom(onLeft = onNavigateBack)
@@ -83,7 +101,7 @@ fun RoomScreen(
         }
 
         if (uiState.room == null) {
-            // Error State
+            // Error / Expired Room State (410 / 404)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -108,7 +126,7 @@ fun RoomScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = uiState.roomError ?: "Oda bulunamadı veya süresi dolmuş olabilir.",
+                            text = uiState.roomError ?: stringResource(R.string.room_expired_message),
                             fontSize = 13.sp,
                             color = NexoraMuted,
                             textAlign = TextAlign.Center
@@ -137,10 +155,10 @@ fun RoomScreen(
         val room = uiState.room!!
 
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
+            // Header with Phase 6H ConnectionStatus ("Bağlı" / "Yeniden bağlanıyor" / "Bağlantı yok")
             RoomHeader(
                 room = room,
-                isConnected = uiState.isConnected,
+                connectionStatus = uiState.connectionStatus,
                 onBackClick = { viewModel.leaveRoom(onLeft = onNavigateBack) },
                 onLeaveClick = { viewModel.leaveRoom(onLeft = onNavigateBack) },
                 onNotice = { viewModel.showNotice(it) }
@@ -154,20 +172,29 @@ fun RoomScreen(
                     .padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Video Player
+                // Video Player (ExoPlayer + YouTube WebView + Guest Read-Only Badge + Overlay Reactions)
                 VideoPlayer(
                     room = room,
                     player = viewModel.player,
                     isHost = uiState.isHost,
-                    localVideoName = uiState.localVideoName
+                    localVideoName = uiState.localVideoName,
+                    expectedPositionSeconds = uiState.expectedPositionSeconds,
+                    overlayReactions = uiState.overlayReactions,
+                    hapticEnabled = uiState.hapticEnabled,
+                    onToggleHaptic = { viewModel.toggleHaptic() },
+                    onSendReaction = { viewModel.sendReaction(it) },
+                    onHostPlaybackChanged = { playing, pos ->
+                        viewModel.publishPlayback(playing, pos)
+                    }
                 )
 
-                // Video Source Panel
+                // Video Source Panel (Host Controls vs Guest Read-Only Mode Banner)
                 VideoSourcePanel(
                     isHost = uiState.isHost,
                     currentVideoUrl = room.video?.url ?: "",
                     onSetVideoUrl = { viewModel.setVideoSource(it) },
                     onSelectLocalVideoUri = { viewModel.selectLocalVideo(it) },
+                    onCancelUpload = { viewModel.cancelUpload() },
                     localVideoName = uiState.localVideoName,
                     onRemoveLocalVideo = { viewModel.removeLocalVideo() },
                     isUploading = uiState.isUploading,
@@ -175,7 +202,23 @@ fun RoomScreen(
                 )
 
                 // Participants Panel
-                ParticipantsPanel(participants = room.participants)
+                ParticipantsPanel(
+                    participants = room.participants,
+                    myParticipantId = uiState.participantId,
+                    onAddFriendFromParticipant = { p ->
+                        viewModel.addFriend(p.nickname, room.code)
+                    }
+                )
+
+                // Optional Friends & Room Invites Panel (Phase 6E)
+                FriendsPanel(
+                    friends = uiState.friends,
+                    invites = uiState.invites,
+                    currentRoomCode = room.code,
+                    onAddFriend = { viewModel.addFriend(it) },
+                    onRemoveFriend = { viewModel.removeFriend(it) },
+                    onSendRoomInvite = { viewModel.sendRoomInvite(it) }
+                )
 
                 // Chat Panel
                 ChatPanel(

@@ -108,3 +108,42 @@ data class UploadResponse(
     @SerializedName("name") val name: String? = null,
     @SerializedName("room") val room: Room? = null
 )
+
+enum class FriendState {
+    ONLINE,
+    IN_ROOM,
+    OFFLINE,
+    PENDING
+}
+
+enum class InviteState {
+    PENDING,
+    SENT,
+    ACCEPTED,
+    DECLINED
+}
+
+data class FriendItem(
+    @SerializedName("id") val id: String,
+    @SerializedName("nickname") val nickname: String,
+    @SerializedName("state") val state: FriendState = FriendState.ONLINE,
+    @SerializedName("active_room_code") val activeRoomCode: String? = null
+)
+
+data class RoomInvite(
+    @SerializedName("id") val id: String,
+    @SerializedName("from_nickname") val fromNickname: String,
+    @SerializedName("to_nickname") val toNickname: String,
+    @SerializedName("room_code") val roomCode: String,
+    @SerializedName("room_name") val roomName: String,
+    @SerializedName("state") val state: InviteState = InviteState.SENT,
+    @SerializedName("created_at") val createdAt: Long = System.currentTimeMillis()
+)
+
+data class OverlayReaction(
+    val id: String,
+    val emoji: String,
+    val senderNickname: String,
+    val horizontalFraction: Float,
+    val createdAt: Long = System.currentTimeMillis()
+)

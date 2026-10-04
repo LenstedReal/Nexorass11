@@ -22,9 +22,12 @@
     <string name="local_video_hint">30 saniye veya daha kısa • MP4, WebM, MOV veya M4V • Android / PC</string>
     <string name="selected_prefix">Seçildi: </string>
     <string name="uploading_progress">Yükleniyor %%%d</string>
+    <string name="cancel_upload">İptal</string>
     <string name="playing_on_device">Bu cihazda oynatılıyor</string>
     <string name="remove_action">Kaldır</string>
-    <string name="host_only_notice">Videoyu yalnızca oda sahibi değiştirebilir.</string>
+    <string name="host_only_notice">Salt okunur mod: Videoyu ve oynatmayı yalnızca oda sahibi değiştirebilir.</string>
+    <string name="guest_read_only_badge">SALT OKUNUR</string>
+    <string name="guest_read_only_controls_notice">İzleyici modundasınız • Oynatma kontrolü oda sahibinde</string>
     <string name="participants_title">Katılımcılar</string>
     <string name="host_badge">HOST</string>
     <string name="chat_title">Sohbet</string>
@@ -34,11 +37,18 @@
     <string name="chat_placeholder_empty">Mesaj yaz...</string>
     <string name="leave_room">Çık</string>
     <string name="room_code_copied">Oda kodu kopyalandı.</string>
-    <string name="realtime_status_connected">Gerçek zamanlı</string>
-    <string name="realtime_status_connecting">Bağlantı aktif</string>
+    <string name="realtime_status_connected">Bağlı</string>
+    <string name="realtime_status_connecting">Yeniden bağlanıyor</string>
+    <string name="realtime_status_disconnected">Bağlantı yok</string>
     <string name="waiting_for_video">Video bekleniyor</string>
     <string name="waiting_for_video_desc">Oda sahibi bir video kaynağı eklediğinde burada görünecek.</string>
+    <string name="video_error_title">Video oynatılamadı</string>
+    <string name="video_error_retry">Yeniden Dene</string>
     <string name="room_loading">Oda yükleniyor...</string>
     <string name="room_error_title">Oda yüklenemedi</string>
+    <string name="room_expired_message">Bu odanın süresi dolmuş (24 saat sınırı).</string>
     <string name="back_to_home">Ana sayfaya dön</string>
+    <string name="haptic_label">Haptik</string>
+    <string name="friends_title">Arkadaşlar &amp; Davetler</string>
+    <string name="friends_optional_hint">Odaları kullanmak için arkadaşlık zorunlu değildir.</string>
 </resources>

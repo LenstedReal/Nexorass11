@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
@@ -44,12 +46,14 @@ import com.lenstedreal.nexorawatch.R
 import com.lenstedreal.nexorawatch.ui.theme.NexoraBorder
 import com.lenstedreal.nexorawatch.ui.theme.NexoraBrand
 import com.lenstedreal.nexorawatch.ui.theme.NexoraBrandSecondary
+import com.lenstedreal.nexorawatch.ui.theme.NexoraError
 import com.lenstedreal.nexorawatch.ui.theme.NexoraGlassBorder
 import com.lenstedreal.nexorawatch.ui.theme.NexoraMuted
 import com.lenstedreal.nexorawatch.ui.theme.NexoraOnBrand
 import com.lenstedreal.nexorawatch.ui.theme.NexoraOnSurface
 import com.lenstedreal.nexorawatch.ui.theme.NexoraSurfaceSecondary
 import com.lenstedreal.nexorawatch.ui.theme.NexoraSurfaceTertiary
+import com.lenstedreal.nexorawatch.ui.theme.NexoraWarning
 
 @Composable
 fun VideoSourcePanel(
@@ -57,6 +61,7 @@ fun VideoSourcePanel(
     currentVideoUrl: String,
     onSetVideoUrl: (String) -> Unit,
     onSelectLocalVideoUri: (Uri) -> Unit,
+    onCancelUpload: () -> Unit = {},
     localVideoName: String?,
     onRemoveLocalVideo: () -> Unit,
     isUploading: Boolean,
@@ -64,6 +69,7 @@ fun VideoSourcePanel(
     modifier: Modifier = Modifier
 ) {
     if (!isHost) {
+        // Guest Read-Only Mode Visual Indicator Card
         Box(
             modifier = modifier
                 .fillMaxWidth()
@@ -71,12 +77,33 @@ fun VideoSourcePanel(
                 .border(1.dp, NexoraBorder, RoundedCornerShape(14.dp))
                 .background(NexoraSurfaceSecondary)
                 .padding(horizontal = 16.dp, vertical = 14.dp)
+                .testTag("guest_readonly_indicator")
         ) {
-            Text(
-                text = stringResource(R.string.host_only_notice),
-                fontSize = 12.sp,
-                color = NexoraMuted
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = stringResource(R.string.guest_read_only_badge),
+                    tint = NexoraWarning,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.host_only_notice),
+                    fontSize = 12.sp,
+                    color = NexoraMuted,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.guest_read_only_badge),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NexoraWarning
+                )
+            }
         }
         return
     }
@@ -184,7 +211,7 @@ fun VideoSourcePanel(
                         containerColor = NexoraBrand,
                         contentColor = NexoraOnBrand
                     ),
-                    enabled = inputUrl.isNotBlank()
+                    enabled = inputUrl.isNotBlank() && !isUploading
                 ) {
                     Text(
                         text = stringResource(R.string.set_source),
@@ -203,7 +230,7 @@ fun VideoSourcePanel(
                     .clip(RoundedCornerShape(10.dp))
                     .background(NexoraSurfaceTertiary.copy(alpha = 0.6f))
                     .border(1.dp, NexoraBrand.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
-                    .clickable { videoPickerLauncher.launch("video/*") }
+                    .clickable(enabled = !isUploading) { videoPickerLauncher.launch("video/*") }
                     .padding(12.dp)
                     .testTag("local_video_picker")
             ) {
@@ -269,18 +296,44 @@ fun VideoSourcePanel(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .border(1.dp, NexoraBorder, RoundedCornerShape(6.dp))
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "Seç",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = NexoraMuted
-                        )
+                    if (isUploading) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .border(1.dp, NexoraError.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                .clickable { onCancelUpload() }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                .testTag("cancel_upload_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.cancel_upload),
+                                tint = NexoraError,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = stringResource(R.string.cancel_upload),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = NexoraError
+                            )
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .border(1.dp, NexoraBorder, RoundedCornerShape(6.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Seç",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = NexoraMuted
+                            )
+                        }
                     }
                 }
             }

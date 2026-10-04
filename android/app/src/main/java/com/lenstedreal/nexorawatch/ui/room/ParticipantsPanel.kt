@@ -2,6 +2,7 @@ package com.lenstedreal.nexorawatch.ui.room
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.PersonAddAlt1
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +46,8 @@ import com.lenstedreal.nexorawatch.ui.theme.NexoraSurfaceTertiary
 @Composable
 fun ParticipantsPanel(
     participants: List<Participant>,
+    myParticipantId: String? = null,
+    onAddFriendFromParticipant: ((Participant) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -117,6 +121,25 @@ fun ParticipantsPanel(
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = NexoraBrandSecondary
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "İZLEYİCİ",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = NexoraMuted
+                            )
+                        }
+                        if (onAddFriendFromParticipant != null && participant.id != myParticipantId) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.PersonAddAlt1,
+                                contentDescription = "Arkadaş Ekle",
+                                tint = NexoraBrandSecondary,
+                                modifier = Modifier
+                                    .size(13.dp)
+                                    .clickable { onAddFriendFromParticipant(participant) }
                             )
                         }
                     }

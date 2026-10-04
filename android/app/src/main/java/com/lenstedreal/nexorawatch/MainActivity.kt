@@ -57,7 +57,11 @@ fun NexoraAppNav(
     sessionStore: SessionStore,
     webSocket: NexoraWebSocket
 ) {
-    var activeRoomCode by remember { mutableStateOf<String?>(null) }
+    // Session recovery (Global Test Matrix: TEST — SESSION):
+    // Automatically restore last active room if app was killed and reopened
+    var activeRoomCode by remember {
+        mutableStateOf(sessionStore.getLastActiveRoomCode())
+    }
 
     if (activeRoomCode == null) {
         val homeViewModel = remember {
@@ -66,6 +70,7 @@ fun NexoraAppNav(
         HomeScreen(
             viewModel = homeViewModel,
             onNavigateToRoom = { code ->
+                sessionStore.saveLastActiveRoomCode(code)
                 activeRoomCode = code
             }
         )
@@ -84,6 +89,7 @@ fun NexoraAppNav(
         RoomScreen(
             viewModel = roomViewModel,
             onNavigateBack = {
+                sessionStore.saveLastActiveRoomCode(null)
                 activeRoomCode = null
             }
         )
